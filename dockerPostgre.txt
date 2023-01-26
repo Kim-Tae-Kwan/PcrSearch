@@ -1,1 +1,1 @@
-docker run -d --name pcrdb -p 5432:5432 -v {YOUR_DATA_DIRETORY}:/var/lib/ -e POSTGRES_PASSWORD={YOUR_PASSWORD} -e POSTGRES_DB=pcr postgres
+docker run -d --name pcrdb -p 5432:5432 -v {YOUR_DATA_DIRETORY}:/var/lib/postgresql/data -e POSTGRES_PASSWORD={YOUR_PASSWORD} -e POSTGRES_DB=pcr postgres
