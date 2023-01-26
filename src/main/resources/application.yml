@@ -1,0 +1,19 @@
+spring:
+  profiles:
+    active:
+    - dev
+    
+#spring:
+#  datasource:
+#    driver-class-name: org.postgresql.Driver
+#    url: jdbc:postgresql://localhost:5432/pcr
+#    username: postgres
+#    password: {YOUR_PASSWORD}
+#  jpa:
+#    hibernate:
+#      ddl-auto: update
+#    show-sql: true
+
+#logging:
+#  level:
+#    root: debug
