@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,10 +16,12 @@ import com.ktk.pcrSearch.mapper.HospitalMapperImpl;
 import com.ktk.pcrSearch.repository.HospitalRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
-public class PcrScheduler {
+public class PcrScheduler implements CommandLineRunner{
 	
 	private final HospitalMapperImpl mapper;
 	private final HospitalRepository hospitalRepository;
@@ -29,23 +32,43 @@ public class PcrScheduler {
 			+ "&pageNo=1"
 			+ "&_type=json";
 	
+	@Override
+	public void run(String... args) throws Exception {
+		
+		// 초기 데이터 입력
+		if(hospitalRepository.count() <= 0) {
+			log.info("Open API Data init...");
+			hospitalRepository.saveAll(getHospitals());
+		}
+	}
+	
 	@Transactional
-	@Scheduled(cron = "* * 9 * * *")
+	@Scheduled(cron = "0 0 9 * * *")
 	public void updateHospitalInfo() {
-		// 전체 데이터 수 얻기
-		Long totalCount = getTotalCount();
 		
-		// 전체 데이터 얻기
-		ResponseDTO dto = restTemplate.getForObject(getUri(totalCount), ResponseDTO.class);
+		log.info("Open API data download...");
+		List<Hospital> hospitals = getHospitals();
 		
-		// Entity 변환
-		List<Hospital> hospitals = dto.getItems().stream().map(mapper::toEntity).collect(Collectors.toList());
-		
-		// 전체 데이터 삭제
+		log.info("Remove all data");
 		hospitalRepository.deleteAll();
 		
-		// 전체 데이터 저장
-		hospitals.stream().forEach(hospitalRepository::save);
+		log.info("Save all data");
+		hospitalRepository.saveAll(hospitals);
+		
+		log.info("Hospital information update success!");
+	}
+	
+	private List<Hospital> getHospitals() {
+		Long totalCount = getTotalCount();
+		ResponseDTO dto = restTemplate.getForObject(getUri(totalCount), ResponseDTO.class);
+		
+		return dto.getItems().stream().map(mapper::toEntity).collect(Collectors.toList());
+	}
+	
+	private Long getTotalCount() {
+		Long initCount = 2L;
+		ResponseDTO dto = this.restTemplate.getForObject(getUri(initCount), ResponseDTO.class);
+		return dto.getResponse().getBody().getTotalCount();
 	}
 	
 	private URI getUri(Long numOfRows){
@@ -57,11 +80,5 @@ public class PcrScheduler {
 		}
 		
 		return uri;
-	}
-	
-	private Long getTotalCount() {
-		Long initCount = 2L;
-		ResponseDTO dto = this.restTemplate.getForObject(getUri(initCount), ResponseDTO.class);
-		return dto.getResponse().getBody().getTotalCount();
 	}
 }
