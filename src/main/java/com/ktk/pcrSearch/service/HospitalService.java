@@ -26,4 +26,9 @@ public class HospitalService {
 	public List<String> findAllGguName(String sidoName) {
 		return hospitalRepository.findAllGguName(sidoName);
 	}
+
+	public List<Hospital> findAllBySidoGuu(String sidoName, String gguName, Pageable pageable) {
+		
+		return hospitalRepository.findALLBySidoNameAndSgguName(sidoName, gguName, pageable).getContent();
+	}
 }

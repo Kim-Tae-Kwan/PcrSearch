@@ -25,8 +25,14 @@ public class HospitalController {
 	private final HospitalService hospitalService;
 	
 	@GetMapping()
-	public ResponseEntity<List<Hospital>> findAll(Pageable pageable){
+	public ResponseEntity<List<Hospital>> findAll(@RequestParam(required = false) String sido, @RequestParam(required = false) String ggu,  Pageable pageable){
+		System.out.println(sido);
 		return ResponseEntity.ok(hospitalService.findAll(pageable)); 
+	}
+	
+	@GetMapping("/{sidoName}/{gguName}")
+	public ResponseEntity<List<Hospital>> findAllBySidoGuu(@PathVariable String sidoName, @PathVariable String gguName,  Pageable pageable){
+		return ResponseEntity.ok(hospitalService.findAllBySidoGuu(sidoName, gguName, pageable)); 
 	}
 	
 	@GetMapping("/sidoName")
