@@ -19,5 +19,5 @@ public interface HospitalRepository extends JpaRepository<Hospital, String> {
 	@Query(nativeQuery = true, value = "select distinct sggu_name from hospital where sido_name = :sidoName order by sggu_name")
 	List<String> findAllGguName(String sidoName);
 
-	Page<Hospital> findALLBySidoNameAndSgguName(String sidoName, String sgguName, Pageable pageable);
+	Page<Hospital> findALLBySidoNameAndSgguNameOrderByName(String sidoName, String sgguName, Pageable pageable);
 }
