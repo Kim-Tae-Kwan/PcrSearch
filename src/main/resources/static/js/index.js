@@ -41,7 +41,7 @@ let appendHospital = (hospitals) => {
 	hospitals.map((hospital, index) => {
 		let tr = `<tr>
 						<td>${index + 1}</td>
-						<td>${hospital.addresss}</td>
+						<td>${hospital.address}</td>
 						<td>${hospital.name}</td>
 						<td>${hospital.tel}</td>
 						<td>${hospital.inspectionYn}</td>

@@ -1,16 +1,23 @@
 package com.ktk.pcrSearch.batch;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import com.ktk.pcrSearch.domain.dto.Item;
 import com.ktk.pcrSearch.domain.dto.ResponseDTO;
+import com.ktk.pcrSearch.domain.dto.kakaoLocal.Document;
+import com.ktk.pcrSearch.domain.dto.kakaoLocal.KakaoLocalResponse;
 import com.ktk.pcrSearch.domain.entity.Hospital;
 import com.ktk.pcrSearch.mapper.HospitalMapperImpl;
 import com.ktk.pcrSearch.repository.HospitalRepository;
@@ -23,6 +30,8 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class PcrScheduler implements CommandLineRunner{
 	
+	@Value("${kakaoKey}")
+	private String kakaoApiKey;
 	private final HospitalMapperImpl mapper;
 	private final HospitalRepository hospitalRepository;
 	private RestTemplate restTemplate = new RestTemplate();
@@ -34,11 +43,12 @@ public class PcrScheduler implements CommandLineRunner{
 	
 	@Override
 	public void run(String... args) throws Exception {
-		
 		// 초기 데이터 입력
 		if(hospitalRepository.count() <= 0) {
 			log.info("Open API Data init...");
-			hospitalRepository.saveAll(getHospitals());
+			List<Hospital> hospitals = getHospitals();
+			hospitalRepository.saveAll(hospitals);
+			log.info("Open API Data init success!!");
 		}
 	}
 	
@@ -59,10 +69,30 @@ public class PcrScheduler implements CommandLineRunner{
 	}
 	
 	private List<Hospital> getHospitals() {
-		Long totalCount = getTotalCount();
-		ResponseDTO dto = restTemplate.getForObject(getUri(totalCount), ResponseDTO.class);
 		
-		return dto.getItems().stream().map(mapper::toEntity).collect(Collectors.toList());
+		// openAPI 총 갯수 구하기
+		Long totalCount = getTotalCount();
+		
+		// openAPI 전체 데이터 들고오기
+		List<Item> items = restTemplate.getForObject(getUri(totalCount), ResponseDTO.class).getItems();
+		log.info("Download data count - " + items.size());
+		
+		// openAPI -> Hospital 엔티티 변환
+		List<Hospital> hospitals = new ArrayList<>();
+		for(int i = 0; i < items.size(); i++ ) {
+			Item item = items.get(i);
+			String address = item.getAddr().split(",")[0];
+			
+			// 주소로 좌표 구하기.
+			Document localInfo = getLocalInfo(address);
+			
+			Hospital hospital = mapper.toEntity(item, localInfo);
+			log.info(String.format("Hostitpal data (%d/%d)", i, items.size()));
+			hospitals.add(hospital);
+		}
+		
+		log.info("Get hospital data success!");
+		return hospitals;
 	}
 	
 	private Long getTotalCount() {
@@ -80,5 +110,23 @@ public class PcrScheduler implements CommandLineRunner{
 		}
 		
 		return uri;
+	}
+	
+	private Document getLocalInfo(String address) {
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("Authorization", "KakaoAK " + kakaoApiKey);
+		HttpEntity<HttpHeaders> request = new HttpEntity<>(headers);
+		
+		KakaoLocalResponse res = restTemplate.exchange("https://dapi.kakao.com/v2/local/search/address.json?query=" + address, HttpMethod.GET, request, KakaoLocalResponse.class).getBody();
+		Integer count = res.getDocuments().size();
+		
+		if(count <= 0) {
+			return Document.builder()
+					.x("0")
+					.y("0")
+					.build();
+		}else {
+			return res.getDocuments().get(0);
+		}
 	}
 }

@@ -26,4 +26,9 @@ public class ViewController {
 		model.addAttribute("gguNames", gguNames);
 		return "index";
 	}
+	
+	@GetMapping("/map")
+	public String map(Model model) {
+		return "map";
+	}
 }

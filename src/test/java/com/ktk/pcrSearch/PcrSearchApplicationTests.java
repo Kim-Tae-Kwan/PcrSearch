@@ -48,15 +48,5 @@ class PcrSearchApplicationTests {
 	void contextLoads() throws UnsupportedEncodingException, URISyntaxException {
 		//1. RestTemplate으로 OpenAPI 들고오기
 		RestTemplate template = new RestTemplate();
-		
-		// 전체 데이터 수 얻기
-		Long totalCount = getTotalCount();
-		// 전체 데이터 얻기
-		HospitalMapperImpl mapper = new HospitalMapperImpl();
-		ResponseDTO dto = template.getForObject(getUri(totalCount), ResponseDTO.class);
-		
-		// 
-		List<Hospital> hospitals = dto.getItems().stream().map(mapper::toEntity).collect(Collectors.toList());
-		hospitals.stream().forEach(hospitalRepository::save);
 	}
 }
